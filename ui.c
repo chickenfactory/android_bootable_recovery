@@ -882,6 +882,7 @@ extern int volumes_changed();
 #define REFRESH_TIME_USB_INTERVAL 5
 int ui_wait_key()
 {
+	ui_print("", key_queue[0]);
     if (boardEnableKeyRepeat) return ui_wait_key_with_repeat();
     pthread_mutex_lock(&key_queue_mutex);
     int timeouts = UI_WAIT_KEY_TIMEOUT_SEC;
