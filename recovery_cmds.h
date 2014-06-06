@@ -71,9 +71,6 @@ static const struct recovery_cmd recovery_cmds[] = {
     { "vdc",            vdc_main },
     { "pigz",           pigz_main },
     { "sdcard",         sdcard_main },
-#ifndef BOARD_RECOVERY_USE_BBTAR
-    { "tar",            minitar_main },
-#endif
 #ifdef USE_F2FS
     { "mkfs.f2fs",      make_f2fs_main },
     { "fsck.f2fs",      fsck_f2fs_main },
