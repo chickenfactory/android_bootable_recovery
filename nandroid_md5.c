@@ -183,6 +183,7 @@ int nandroid_restore_md5_check(const char *backup_path, unsigned char flags) {
     int ret = 0;
     int filecount = 0;
     int md5count = 0;
+    int use_ui = is_ui_initialized();
 
     if (empty_nandroid_bitmask(flags)) {
         LOGE("Nothing selected for restore.\n");
@@ -238,7 +239,8 @@ int nandroid_restore_md5_check(const char *backup_path, unsigned char flags) {
     if (fd != NULL) {
         char tmp[PATH_MAX];
         while (fgets(tmp, PATH_MAX, fd) && i < MAX_FILES_CHECKED) {
-            tmp[strlen(tmp)-1] = '\0';
+            if (tmp[strlen(tmp)-1] == '\n')
+                tmp[strlen(tmp)-1] = '\0';
             if (is_selected_for_restore(tmp, flags)) {
                 md5hashes[i] = malloc(sizeof(char[HASH_LENGTH+1]));
                 snprintf(md5hashes[i], HASH_LENGTH+1, "%s", tmp);
@@ -285,7 +287,7 @@ int nandroid_restore_md5_check(const char *backup_path, unsigned char flags) {
     }
 
     // Warn user of failure for missing files
-    if (totalmissing) {
+    if (totalmissing && use_ui) {
         int uiback = ui_is_showing_back_button();
         ui_set_showing_back_button(0);
 
@@ -315,6 +317,16 @@ int nandroid_restore_md5_check(const char *backup_path, unsigned char flags) {
             LOGE("Aborting\n");
             goto out;
         }
+    } else if (totalmissing) {
+        // No UI, so no prompt possible; fail the restore
+        ret = -1;
+        LOGE("Backup files are missing:\n");
+        for (i = 0; i < md5count; i++) {
+            if (mm[i].is_missing)
+                LOGE("%s\n", mm[i].filename);
+        }
+        LOGE("Aborting\n");
+        goto out;
     }
 
     // Cross-reference files in directory to those in nandroid.md5
@@ -342,7 +354,7 @@ int nandroid_restore_md5_check(const char *backup_path, unsigned char flags) {
     }
 
     // Warn user about missing md5 references for files
-    if (totalmissing) {
+    if (totalmissing && use_ui) {
         int uiback = ui_is_showing_back_button();
         ui_set_showing_back_button(0);
 
@@ -369,6 +381,16 @@ int nandroid_restore_md5_check(const char *backup_path, unsigned char flags) {
             LOGE("Aborting\n");
             goto out;
         }
+    } else if (totalmissing) {
+        // No UI, so no prompt possible; fail the restore
+        ret = -1;
+        LOGE("Could not find reference MD5 for:\n");
+        for (i = 0; i < filecount; i++) {
+            if (mf[i].is_missing)
+                LOGE("%s\n", mf[i].filename);
+        }
+        LOGE("Aborting\n");
+        goto out;
     }
 
     // Compare MD5s of non-missing files that are selected for restore
